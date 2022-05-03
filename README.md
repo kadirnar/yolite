@@ -27,3 +27,9 @@ You can take the detect.py file as an example to load and visualize your yolov5 
 
 <img src="doc/yolov5_run.jpg" alt="Yolov5-Lite" width="500">
 
+
+### Reference:
+
+ - [YOLOv5](https://github.com/ultralytics/yolov5)
+ - [YOLOv5-Pip](https://github.com/fcakyon/yolov5-pip)
+
