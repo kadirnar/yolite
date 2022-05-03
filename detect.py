@@ -8,10 +8,7 @@ imgsz = 640
 view_img = True
 
 
-model = load_model(weights, device, data)
-
-tensor_im, npy_im = preprocces_img(img, imgsz, device)
-
-det, annotator = detect(model, tensor_im, npy_im)
-
-show_img(model, det, annotator, view_img=True)
+model = Yolov5(weights, device, data)
+model.preprocces_img(img, imgsz)
+model.detect(data)
+model.show_img(model, model.det, view_img)

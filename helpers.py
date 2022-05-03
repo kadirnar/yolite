@@ -6,44 +6,52 @@ from utils.datasets import file_to_torch, numpy_img
 import logging
 
 
-def load_model(weights, device, data):
-    device = select_device(device)
-    model = DetectMultiBackend(weights, device=device, data=data)
-    return model
+class Yolov5:
+    def __init__(self, weights, device, data):
+        self.weights = weights
+        self.device = device
+        self.model = self.load_model(weights, device, data)
+        self.imgsz = 640
+        self.view_img = True
 
+    def load_model(self, weights, device, data):
+        self.device = select_device(device)
+        self.model = DetectMultiBackend(weights, device=self.device, data=data)
+        return self.model
 
-def preprocces_img(img, imgsz, device):
-    npy_im = numpy_img(img, imgsz)
-    tensor_im = file_to_torch(npy_im, device)
-    return tensor_im, npy_im
+    def preprocces_img(self, img, imgsz):
+        self.npy_im = numpy_img(img, imgsz)
+        self.tensor_im = file_to_torch(self.npy_im, self.device)
+        print("\t+ Tensorsize: ", self.tensor_im.shape)
+        print("\t+ Imgsize: ", self.npy_im.shape)
 
+ 
+    def detect(self, data):
+        # Inference
+        self.model = self.load_model(self.weights, self.device, data)
+        pred = self.model(self.tensor_im)  # shape: torch.Size([1, 3, 640, 480])
 
-def detect(model, tensor_im, npy_im):
-    # Inference
-    pred = model(tensor_im)  # shape: torch.Size([1, 3, 640, 480])
+        # NMS
+        pred = non_max_suppression(pred, conf_thres=0.25, iou_thres=0.45, max_det=1000)
 
-    # NMS
-    pred = non_max_suppression(pred, conf_thres=0.25, iou_thres=0.45, max_det=1000)
+        for det in pred:
+            det[:, :4] = scale_coords(self.tensor_im.shape[2:], det[:, :4], self.npy_im.shape).round()
+        
+        self.det = det
+        
 
-    for det in pred:
-        annotator = Annotator(npy_im, line_width=3, example=str(model.names))
-        det[:, :4] = scale_coords(tensor_im.shape[2:], det[:, :4], npy_im.shape).round()
+    def show_img(self, model, det, view_img=True):
+        # Write results
+        for *xyxy, conf, cls in reversed(det):
+            annotator = Annotator(self.npy_im, line_width=3, example=str(self.model.names))
+            logging.info("\t+ Label: %s, Conf: %.5f" % (self.model.names[int(cls)], conf.item()))
+            if view_img:  # Add bbox to image
+                label = "%s %.2f" % (self.model.names[int(cls)], conf)
+                annotator.box_label(xyxy, label, color=colors(int(cls), True))
 
-    return det, annotator
-
-
-def show_img(model, det, annotator, view_img=True):
-    # Write results
-    for *xyxy, conf, cls in reversed(det):
-        logging.info("\t+ Label: %s, Conf: %.5f" % (model.names[int(cls)], conf.item()))
-        if view_img:  # Add bbox to image
-            c = int(cls)  # integer class
-            label = "%s %.2f" % (model.names[c], conf)
-            annotator.box_label(xyxy, label, color=colors(c, True))
-
-    # Stream results
-    im0 = annotator.result()
-    if view_img:
-        cv2.imshow("frame", im0)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # Stream results
+        im0 = annotator.result()
+        if view_img:
+            cv2.imshow("frame", im0)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
