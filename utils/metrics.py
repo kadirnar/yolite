@@ -48,7 +48,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
         n_l = nt[ci]  # number of labels
         n_p = i.sum()  # number of predictions
 
-        if n_p == 0 or n_l == 0:
+        if 0 in (n_p, n_l):
             continue
         else:
             # Accumulate FPs and TPs
