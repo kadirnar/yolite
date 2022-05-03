@@ -1,4 +1,4 @@
-from helpers import *
+from utils.yolov5 import Yolov5
 
 weights = "yolov5s.pt"
 img = "data/images/bus.jpg"
@@ -9,6 +9,7 @@ view_img = True
 
 
 model = Yolov5(weights, device, data)
+model.load_model(weights, device, data)
 model.preprocces_img(img, imgsz)
-model.detect(data)
-model.show_img(model, model.det, view_img)
+model.detect()
+model.show_img(view_img)
