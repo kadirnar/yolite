@@ -7,7 +7,7 @@
 
 ## <div align="center">Overview</div>
 
-It is a simplified version of the Yolov5 repo.
+It has been simplified by editing detect.py in the yolov5 repository.
 
 ### Installation
 
@@ -17,10 +17,13 @@ cd yolov5-lite
 pip install -r requirements.txt
 ```
 
-### Yolov5 Class
+## Yolov5-Lite Prediction: 
+It is the edited version of the codes in the detect file.
 <img src="doc/yolov5.jpg" alt="Yolov5-Lite" width="800">
 
 
-### Yolov5-Lite Tutorial
-<img src="doc/yolov5_run.jpg" alt="Yolov5-Lite" width="300">
+## Yolov5-Lite Run Code:
+You can take the detect.py file as an example to load and visualize your yolov5 models.
+
+<img src="doc/yolov5_run.jpg" alt="Yolov5-Lite" width="500">
 
