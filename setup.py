@@ -6,10 +6,14 @@ def readme():
         README = f.read()
     return README
 
+def get_requirements():
+    with open("requirements.txt", encoding="utf8") as f:
+        return f.read().splitlines()
+
 
 setup(
-    name="yolov5-lite",
-    version="0.0.1",
+    name="yolite",
+    version="0.0.2",
     description="Yolov5-Lite: Minimal YoloV5 Implementation",
     long_description=readme(),
     long_description_content_type="text/markdown",
@@ -27,5 +31,5 @@ setup(
     ],
     packages=["yolite"],
     include_package_data=True,
-    install_requires="requirements.txt",
+    install_requires=get_requirements(),
 )
