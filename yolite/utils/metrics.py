@@ -72,7 +72,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     # Compute F1 (harmonic mean of precision and recall)
     f1 = 2 * p * r / (p + r + eps)
     names = [v for k, v in names.items() if k in unique_classes]  # list: only classes that have data
-    names = {i: v for i, v in enumerate(names)}  # to dict
+    names = dict(enumerate(names))  # to dict
     if plot:
         plot_pr_curve(px, py, ap, Path(save_dir) / 'PR_curve.png', names)
         plot_mc_curve(px, f1, Path(save_dir) / 'F1_curve.png', names, ylabel='F1')
@@ -168,7 +168,6 @@ class ConfusionMatrix:
     def tp_fp(self):
         tp = self.matrix.diagonal()  # true positives
         fp = self.matrix.sum(1) - tp  # false positives
-        # fn = self.matrix.sum(0) - tp  # false negatives (missed detections)
         return tp[:-1], fp[:-1]  # remove background class
 
     def plot(self, normalize=True, save_dir='', names=()):
@@ -248,7 +247,6 @@ def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7
 
 
 def box_area(box):
-    # box = xyxy(4,n)
     return (box[2] - box[0]) * (box[3] - box[1])
 
 
@@ -269,7 +267,6 @@ def box_iou(box1, box2):
     (a1, a2), (b1, b2) = box1[:, None].chunk(2, 2), box2.chunk(2, 1)
     inter = (torch.min(a2, b2) - torch.max(a1, b1)).clamp(0).prod(2)
 
-    # IoU = inter / (area1 + area2 - inter)
     return inter / (box_area(box1.T)[:, None] + box_area(box2.T) - inter)
 
 

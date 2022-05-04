@@ -19,7 +19,7 @@ import torch
 def gsutil_getsize(url=''):
     # gs://bucket/file size https://cloud.google.com/storage/docs/gsutil/commands/du
     s = subprocess.check_output(f'gsutil du {url}', shell=True).decode('utf-8')
-    return eval(s.split(' ')[0]) if len(s) else 0  # bytes
+    return eval(s.split(' ')[0]) if s else 0  # bytes
 
 
 def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
@@ -31,7 +31,8 @@ def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
     try:  # url1
         LOGGER.info(f'Downloading {url} to {file}...')
         torch.hub.download_url_to_file(url, str(file), progress=LOGGER.level <= logging.INFO)
-        assert file.exists() and file.stat().st_size > min_bytes, assert_msg  # check
+        if not (file.exists() and file.stat().st_size > min_bytes):
+            raise AssertionError(assert_msg)
     except Exception as e:  # url2
         file.unlink(missing_ok=True)  # remove partial downloads
         LOGGER.info(f'ERROR: {e}\nRe-attempting {url2 or url} to {file}...')

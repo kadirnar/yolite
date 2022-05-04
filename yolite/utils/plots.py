@@ -31,7 +31,6 @@ matplotlib.use('Agg')  # for writing to files only
 class Colors:
     # Ultralytics color palette https://ultralytics.com/
     def __init__(self):
-        # hex = matplotlib.colors.TABLEAU_COLORS.values()
         hex = ('FF3838', 'FF9D97', 'FF701F', 'FFB21D', 'CFD231', '48F90A', '92CC17', '3DDB86', '1A9334', '00D4BB',
                '2C99A8', '00C2FF', '344593', '6473FF', '0018EC', '8438FF', '520085', 'CB38FF', 'FF95C8', 'FF37C7')
         self.palette = [self.hex2rgb('#' + c) for c in hex]
@@ -68,7 +67,8 @@ def check_pil_font(font=FONT, size=10):
 class Annotator:
     # YOLOv5 Annotator for train/val mosaics and jpgs and detect/hub inference annotations
     def __init__(self, im, line_width=None, font_size=None, font='Arial.ttf', pil=False, example='abc'):
-        assert im.data.contiguous, 'Image not contiguous. Apply np.ascontiguousarray(im) to Annotator() input images.'
+        if not im.data.contiguous:
+            raise AssertionError('Image not contiguous. Apply np.ascontiguousarray(im) to Annotator() input images.')
         non_ascii = not is_ascii(example)  # non-latin labels, i.e. asian, arabic, cyrillic
         self.pil = pil or non_ascii
         if self.pil:  # use PIL
@@ -92,7 +92,6 @@ class Annotator:
                      box[1] + 1 if outside else box[1] + h + 1),
                     fill=color,
                 )
-                # self.draw.text((box[0], box[1]), label, fill=txt_color, font=self.font, anchor='ls')  # for PIL>8.0
                 self.draw.text((box[0], box[1] - h if outside else box[1]), label, fill=txt_color, font=self.font)
         else:  # cv2
             p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
@@ -419,7 +418,8 @@ def plot_results(file='path/to/results.csv', dir=''):
     fig, ax = plt.subplots(2, 5, figsize=(12, 6), tight_layout=True)
     ax = ax.ravel()
     files = list(save_dir.glob('results*.csv'))
-    assert len(files), f'No results.csv files found in {save_dir.resolve()}, nothing to plot.'
+    if not files:
+        raise AssertionError(f'No results.csv files found in {save_dir.resolve()}, nothing to plot.')
     for fi, f in enumerate(files):
         try:
             data = pd.read_csv(f)
@@ -427,11 +427,8 @@ def plot_results(file='path/to/results.csv', dir=''):
             x = data.values[:, 0]
             for i, j in enumerate([1, 2, 3, 4, 5, 8, 9, 10, 6, 7]):
                 y = data.values[:, j]
-                # y[y == 0] = np.nan  # don't show zero values
                 ax[i].plot(x, y, marker='.', label=f.stem, linewidth=2, markersize=8)
                 ax[i].set_title(s[j], fontsize=12)
-                # if j in [8, 9, 10]:  # share train and val loss y axes
-                #     ax[i].get_shared_y_axes().join(ax[i], ax[i - 5])
         except Exception as e:
             LOGGER.info(f'Warning: Plotting error for {f}: {e}')
     ax[1].legend()
@@ -454,12 +451,10 @@ def profile_idetection(start=0, stop=0, labels=(), save_dir=''):
             results[0] = x
             for i, a in enumerate(ax):
                 if i < len(results):
-                    label = labels[fi] if len(labels) else f.stem.replace('frames_', '')
+                    label = labels[fi] if labels else f.stem.replace('frames_', '')
                     a.plot(t, results[i], marker='.', label=label, linewidth=1, markersize=5)
                     a.set_title(s[i])
                     a.set_xlabel('time (s)')
-                    # if fi == len(files) - 1:
-                    #     a.set_ylim(bottom=0)
                     for side in ['top', 'right']:
                         a.spines[side].set_visible(False)
                 else:
@@ -483,6 +478,5 @@ def save_one_box(xyxy, im, file=Path('im.jpg'), gain=1.02, pad=10, square=False,
     if save:
         file.parent.mkdir(parents=True, exist_ok=True)  # make directory
         f = str(increment_path(file).with_suffix('.jpg'))
-        # cv2.imwrite(f, crop)  # https://github.com/ultralytics/yolov5/issues/7007 chroma subsampling issue
         Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)).save(f, quality=95, subsampling=0)
     return crop
