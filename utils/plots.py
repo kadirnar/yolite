@@ -8,13 +8,9 @@ import os
 from copy import copy
 from pathlib import Path
 from urllib.error import URLError
-
 import cv2
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sn
 import torch
 from PIL import Image, ImageDraw, ImageFont
 
@@ -24,9 +20,6 @@ from utils.metrics import fitness
 
 # Settings
 RANK = int(os.getenv('RANK', -1))
-matplotlib.rc('font', **{'size': 11})
-matplotlib.use('Agg')  # for writing to files only
-
 
 class Colors:
     # Ultralytics color palette https://ultralytics.com/
