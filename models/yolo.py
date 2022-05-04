@@ -215,7 +215,7 @@ class Model(nn.Module):
         for mi in m.m:  # from
             b = mi.bias.detach().view(m.na, -1).T  # conv.bias(255) to (3,85)
             LOGGER.info(
-                ('%6g Conv2d.bias:' + '%10.3g' * 6) % (mi.weight.shape[1], *b[:5].mean(1).tolist(), b[5:].mean()))
+                ('%6g Conv2d.bias:' + '%10.3g' * 6), mi.weight.shape[1], b[:5].mean(1).tolist(), b[5:].mean())
 
     # def _print_weights(self):
     #     for m in self.model.modules():
