@@ -418,7 +418,7 @@ def plot_results(file='path/to/results.csv', dir=''):
     fig, ax = plt.subplots(2, 5, figsize=(12, 6), tight_layout=True)
     ax = ax.ravel()
     files = list(save_dir.glob('results*.csv'))
-    if not len(files):
+    if not files:
         raise AssertionError(f'No results.csv files found in {save_dir.resolve()}, nothing to plot.')
     for fi, f in enumerate(files):
         try:

@@ -319,9 +319,8 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
     current, minimum = (pkg.parse_version(x) for x in (current, minimum))
     result = (current == minimum) if pinned else (current >= minimum)  # bool
     s = f'{name}{minimum} required by YOLOv5, but {name}{current} is currently installed'  # string
-    if hard:
-        if not result:
-            raise AssertionError(s)
+    if hard and not result:
+        raise AssertionError(s)
     if verbose and not result:
         LOGGER.warning(s)
     return result
@@ -402,9 +401,8 @@ def check_suffix(file='yolov5s.pt', suffix=('.pt',), msg=''):
             suffix = [suffix]
         for f in file if isinstance(file, (list, tuple)) else [file]:
             s = Path(f).suffix.lower()  # file suffix
-            if len(s):
-                if s not in suffix:
-                    raise AssertionError(f"{msg}{f} acceptable suffix is {suffix}")
+            if len(s) and s not in suffix:
+                raise AssertionError(f"{msg}{f} acceptable suffix is {suffix}")
 
 
 def check_yaml(file, suffix=('.yaml', '.yml')):
