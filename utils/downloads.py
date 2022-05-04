@@ -19,7 +19,7 @@ import torch
 def gsutil_getsize(url=''):
     # gs://bucket/file size https://cloud.google.com/storage/docs/gsutil/commands/du
     s = subprocess.check_output(f'gsutil du {url}', shell=True).decode('utf-8')
-    return eval(s.split(' ')[0]) if len(s) else 0  # bytes
+    return eval(s.split(' ')[0]) if s else 0  # bytes
 
 
 def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
