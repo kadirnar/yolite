@@ -41,7 +41,8 @@ def torch_distributed_zero_first(local_rank: int):
 
 def device_count():
     # Returns number of CUDA devices available. Safe version of torch.cuda.device_count(). Only works on Linux.
-    assert platform.system() == 'Linux', 'device_count() function only works on Linux'
+    if platform.system() != 'Linux':
+        raise AssertionError('device_count() function only works on Linux')
     try:
         cmd = 'nvidia-smi -L | wc -l'
         return int(subprocess.run(cmd, shell=True, capture_output=True, check=True).stdout.decode().split()[-1])
@@ -50,7 +51,6 @@ def device_count():
 
 
 def select_device(device='', batch_size=0, newline=True):
-    # device = 'cpu' or '0' or '0,1,2,3'
     s = f'YOLOv5 🚀 {git_describe() or file_update_date()} torch {torch.__version__} '  # string
     device = str(device).strip().lower().replace('cuda:', '')  # to string, 'cuda:0' to '0'
     cpu = device == 'cpu'
@@ -58,15 +58,16 @@ def select_device(device='', batch_size=0, newline=True):
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
     elif device:  # non-cpu device requested
         os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable - must be before assert is_available()
-        assert torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', '')), \
-            f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)"
+        if not (torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', ''))):
+            raise AssertionError(f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)")
 
     cuda = not cpu and torch.cuda.is_available()
     if cuda:
         devices = device.split(',') if device else '0'  # range(torch.cuda.device_count())  # i.e. 0,1,6,7
         n = len(devices)  # device count
         if n > 1 and batch_size > 0:  # check batch_size is divisible by device_count
-            assert batch_size % n == 0, f'batch-size {batch_size} not multiple of GPU count {n}'
+            if batch_size % n != 0:
+                raise AssertionError(f'batch-size {batch_size} not multiple of GPU count {n}')
         space = ' ' * (len(s) + 1)
         for i, d in enumerate(devices):
             p = torch.cuda.get_device_properties(i)
