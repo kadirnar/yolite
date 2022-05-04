@@ -231,7 +231,7 @@ def is_ascii(s=''):
 
 def is_chinese(s='人工智能'):
     # Is string composed of any Chinese characters?
-    return True if re.search('[\u4e00-\u9fff]', str(s)) else False
+    return bool(re.search('[\u4e00-\u9fff]', str(s)))
 
 
 def emojis(str=''):
