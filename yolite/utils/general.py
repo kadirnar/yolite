@@ -431,7 +431,7 @@ def check_file(file, suffix=''):
         files = []
         for d in 'data', 'models', 'utils':  # search directories
             files.extend(glob.glob(str(ROOT / d / '**' / file), recursive=True))  # find file
-        if not len(files):
+        if not files:
             raise AssertionError(f'File not found: {file}')
         if len(files) != 1:
             raise AssertionError(f"Multiple files match '{file}', specify exact path: {files}")
