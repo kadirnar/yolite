@@ -1,6 +1,4 @@
-seaborn 
-matplotlib 
-torchvision
+ torchvision
 tqdm
 Pillow 
 pyyaml                                                                                                            
