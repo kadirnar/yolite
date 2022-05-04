@@ -1,4 +1,4 @@
- torchvision
+torchvision
 tqdm
 Pillow 
 pyyaml                                                                                                            
