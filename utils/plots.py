@@ -419,7 +419,7 @@ def plot_results(file='path/to/results.csv', dir=''):
     fig, ax = plt.subplots(2, 5, figsize=(12, 6), tight_layout=True)
     ax = ax.ravel()
     files = list(save_dir.glob('results*.csv'))
-    assert len(files), f'No results.csv files found in {save_dir.resolve()}, nothing to plot.'
+    assert files, f'No results.csv files found in {save_dir.resolve()}, nothing to plot.'
     for fi, f in enumerate(files):
         try:
             data = pd.read_csv(f)
@@ -454,7 +454,7 @@ def profile_idetection(start=0, stop=0, labels=(), save_dir=''):
             results[0] = x
             for i, a in enumerate(ax):
                 if i < len(results):
-                    label = labels[fi] if len(labels) else f.stem.replace('frames_', '')
+                    label = labels[fi] if labels else f.stem.replace('frames_', '')
                     a.plot(t, results[i], marker='.', label=label, linewidth=1, markersize=5)
                     a.set_title(s[i])
                     a.set_xlabel('time (s)')
