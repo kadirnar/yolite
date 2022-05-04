@@ -25,7 +25,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    packages=["yolov5-lite"],
+    packages=["yolite"],
     include_package_data=True,
     install_requires="requirements.txt",
 )
