@@ -2,7 +2,7 @@
 <h1>
   Yolov5-Lite: Minimal YoloV5 Implementation
 </h1>
-<img src="doc/readme_yolov5.png" alt="Yolov5-Lite" width="800">
+<img src="doc/readme_yolov5.png" alt="Yolite" width="800">
 </div>
 
 ## <div align="center">Overview</div>
@@ -12,12 +12,10 @@ It has been simplified by editing detect.py in the yolov5 repository.
 ### Installation
 
 ```
-git clone https://github.com/kadirnar/yolov5-lite
-cd yolov5-lite
-pip install -r requirements.txt
+pip install yolite
 ```
 
-## Yolov5-Lite Prediction: 
+## Yolite Prediction: 
 It is the edited version of the codes in the detect file.
 ```
 class Yolov5:
@@ -61,7 +59,7 @@ class Yolov5:
             cv2.destroyAllWindows()
 ```
 
-## Yolov5-Lite Run Code:
+## Yolite Run Code:
 You can take the detect.py file as an example to load and visualize your yolov5 models.
 
 ```
