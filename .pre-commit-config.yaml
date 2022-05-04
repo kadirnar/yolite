@@ -1,13 +1,10 @@
 repos:
-  - repo: local
+-   repo: local
     hooks:
-      - &custom
-        id: custom
-        name: custom
-        entry: custom
-        language: python
-        types: [python]
-      - <<: *custom
-        args: ['something']
-      - <<: *custom
-        args: ['something-else']
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: local
+    hooks:
+    -   id: black
+        args: [--line-length=120]
