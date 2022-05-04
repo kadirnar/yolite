@@ -1,6 +1,6 @@
 <div align="center">
 <h1>
-  Yolov5-Lite: Minimal YoloV5 Implementation
+  Yolite: Minimal Yolov5 Implementation
 </h1>
 <img src="doc/readme_yolov5.png" alt="Yolite" width="800">
 </div>
