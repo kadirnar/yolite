@@ -34,7 +34,7 @@ class Yolov5:
         # Write results
         for *xyxy, conf, cls in reversed(self.det):
             annotator = Annotator(self.npy_im, line_width=3, example=str(self.model.names))
-            logging.info("\t+ Label: %s, Conf: %.5f", self.model.names[int(cls)], conf.item())
+            logging.info("\t+ Label: %s, Conf: %.5f" % (self.model.names[int(cls)], conf.item()))
             if view_img:  # Add bbox to image
                 label = "%s %.2f" % (self.model.names[int(cls)], conf)
                 annotator.box_label(xyxy, label, color=colors(int(cls), True))

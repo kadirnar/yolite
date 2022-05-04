@@ -55,10 +55,8 @@ os.environ['OMP_NUM_THREADS'] = str(NUM_THREADS)  # OpenMP max threads (PyTorch 
 def is_kaggle():
     # Is environment a Kaggle Notebook?
     try:
-        if os.environ.get('PWD') != '/kaggle/working':
-            raise AssertionError
-        if os.environ.get('KAGGLE_URL_BASE') != 'https://www.kaggle.com':
-            raise AssertionError
+        assert os.environ.get('PWD') == '/kaggle/working'
+        assert os.environ.get('KAGGLE_URL_BASE') == 'https://www.kaggle.com'
         return True
     except AssertionError:
         return False
@@ -233,7 +231,7 @@ def is_ascii(s=''):
 
 def is_chinese(s='人工智能'):
     # Is string composed of any Chinese characters?
-    return bool(re.search('[\u4e00-\u9fff]', str(s)))
+    return True if re.search('[\u4e00-\u9fff]', str(s)) else False
 
 
 def emojis(str=''):
@@ -278,8 +276,7 @@ def check_online():
 def git_describe(path=ROOT):  # path must be a directory
     # Return human-readable git description, i.e. v5.0-5-g3e25f1e https://git-scm.com/docs/git-describe
     try:
-        if not (Path(path) / '.git').is_dir():
-            raise AssertionError
+        assert (Path(path) / '.git').is_dir()
         return check_output(f'git -C {path} describe --tags --long --always', shell=True).decode()[:-1]
     except Exception:
         return ''
@@ -291,12 +288,9 @@ def check_git_status():
     # Recommend 'git pull' if code is out of date
     msg = ', for updates see https://github.com/ultralytics/yolov5'
     s = colorstr('github: ')  # string
-    if not Path('.git').exists():
-        raise AssertionError(s + 'skipping check (not a git repository)' + msg)
-    if is_docker():
-        raise AssertionError(s + 'skipping check (Docker image)' + msg)
-    if not check_online():
-        raise AssertionError(s + 'skipping check (offline)' + msg)
+    assert Path('.git').exists(), s + 'skipping check (not a git repository)' + msg
+    assert not is_docker(), s + 'skipping check (Docker image)' + msg
+    assert check_online(), s + 'skipping check (offline)' + msg
 
     cmd = 'git fetch && git config --get remote.origin.url'
     url = check_output(cmd, shell=True, timeout=5).decode().strip().rstrip('.git')  # git fetch
@@ -319,8 +313,8 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
     current, minimum = (pkg.parse_version(x) for x in (current, minimum))
     result = (current == minimum) if pinned else (current >= minimum)  # bool
     s = f'{name}{minimum} required by YOLOv5, but {name}{current} is currently installed'  # string
-    if hard and not result:
-        raise AssertionError(s)
+    if hard:
+        assert result, s  # assert min requirements met
     if verbose and not result:
         LOGGER.warning(s)
     return result
@@ -333,8 +327,7 @@ def check_requirements(requirements=ROOT / 'requirements.txt', exclude=(), insta
     check_python()  # check python version
     if isinstance(requirements, (str, Path)):  # requirements.txt file
         file = Path(requirements)
-        if not file.exists():
-            raise AssertionError(f"{prefix} {file.resolve()} not found, check failed.")
+        assert file.exists(), f"{prefix} {file.resolve()} not found, check failed."
         with file.open() as f:
             requirements = [f'{x.name}{x.specifier}' for x in pkg.parse_requirements(f) if x.name not in exclude]
     else:  # list or tuple of packages
@@ -349,8 +342,7 @@ def check_requirements(requirements=ROOT / 'requirements.txt', exclude=(), insta
             if install and AUTOINSTALL:  # check environment variable
                 LOGGER.info(f"{s}, attempting auto-update...")
                 try:
-                    if not check_online():
-                        raise AssertionError(f"'pip install {r}' skipped (offline)")
+                    assert check_online(), f"'pip install {r}' skipped (offline)"
                     LOGGER.info(check_output(f"pip install '{r}' {cmds[i] if cmds else ''}", shell=True).decode())
                     n += 1
                 except Exception as e:
@@ -380,10 +372,8 @@ def check_img_size(imgsz, s=32, floor=0):
 def check_imshow():
     # Check if environment supports image displays
     try:
-        if is_docker():
-            raise AssertionError('cv2.imshow() is disabled in Docker environments')
-        if is_colab():
-            raise AssertionError('cv2.imshow() is disabled in Google Colab environments')
+        assert not is_docker(), 'cv2.imshow() is disabled in Docker environments'
+        assert not is_colab(), 'cv2.imshow() is disabled in Google Colab environments'
         cv2.imshow('test', np.zeros((1, 1, 3)))
         cv2.waitKey(1)
         cv2.destroyAllWindows()
@@ -401,8 +391,8 @@ def check_suffix(file='yolov5s.pt', suffix=('.pt',), msg=''):
             suffix = [suffix]
         for f in file if isinstance(file, (list, tuple)) else [file]:
             s = Path(f).suffix.lower()  # file suffix
-            if len(s) and s not in suffix:
-                raise AssertionError(f"{msg}{f} acceptable suffix is {suffix}")
+            if len(s):
+                assert s in suffix, f"{msg}{f} acceptable suffix is {suffix}"
 
 
 def check_yaml(file, suffix=('.yaml', '.yml')):
@@ -424,17 +414,14 @@ def check_file(file, suffix=''):
         else:
             LOGGER.info(f'Downloading {url} to {file}...')
             torch.hub.download_url_to_file(url, file)
-            if not (Path(file).exists() and Path(file).stat().st_size > 0):
-                raise AssertionError(f'File download failed: {url}')
+            assert Path(file).exists() and Path(file).stat().st_size > 0, f'File download failed: {url}'  # check
         return file
     else:  # search
         files = []
         for d in 'data', 'models', 'utils':  # search directories
             files.extend(glob.glob(str(ROOT / d / '**' / file), recursive=True))  # find file
-        if not files:
-            raise AssertionError(f'File not found: {file}')
-        if len(files) != 1:
-            raise AssertionError(f"Multiple files match '{file}', specify exact path: {files}")
+        assert len(files), f'File not found: {file}'  # assert file was found
+        assert len(files) == 1, f"Multiple files match '{file}', specify exact path: {files}"  # assert unique
         return files[0]  # return file
 
 
@@ -473,8 +460,7 @@ def check_dataset(data, autodownload=True):
             data[k] = str(path / data[k]) if isinstance(data[k], str) else [str(path / x) for x in data[k]]
 
     # Parse yaml
-    if 'nc' not in data:
-        raise AssertionError("Dataset 'nc' key missing.")
+    assert 'nc' in data, "Dataset 'nc' key missing."
     if 'names' not in data:
         data['names'] = [f'class{i}' for i in range(data['nc'])]  # assign class names if missing
     train, val, test, s = (data.get(x) for x in ('train', 'val', 'test', 'download'))
@@ -627,6 +613,7 @@ def labels_to_image_weights(labels, nc=80, class_weights=np.ones(80)):
     # Produces image weights based on class_weights and image contents
     class_counts = np.array([np.bincount(x[:, 0].astype(np.int), minlength=nc) for x in labels])
     image_weights = (class_weights.reshape(1, nc) * class_counts).sum(1)
+    # index = random.choices(range(n), weights=image_weights, k=1)  # weight image sample
     return image_weights
 
 
@@ -766,11 +753,11 @@ def non_max_suppression(prediction,
     xc = prediction[..., 4] > conf_thres  # candidates
 
     # Checks
-    if not 0 <= conf_thres <= 1:
-        raise AssertionError(f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0')
-    if not 0 <= iou_thres <= 1:
-        raise AssertionError(f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0')
+    assert 0 <= conf_thres <= 1, f'Invalid Confidence threshold {conf_thres}, valid values are between 0.0 and 1.0'
+    assert 0 <= iou_thres <= 1, f'Invalid IoU {iou_thres}, valid values are between 0.0 and 1.0'
 
+    # Settings
+    # min_wh = 2  # (pixels) minimum box width and height
     max_wh = 7680  # (pixels) maximum box width and height
     max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
     time_limit = 0.1 + 0.03 * bs  # seconds to quit after
@@ -928,6 +915,7 @@ def apply_classifier(x, model, img, im0):
             for j, a in enumerate(d):  # per item
                 cutout = im0[i][int(a[1]):int(a[3]), int(a[0]):int(a[2])]
                 im = cv2.resize(cutout, (224, 224))  # BGR
+                # cv2.imwrite('example%i.jpg' % j, cutout)
 
                 im = im[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
                 im = np.ascontiguousarray(im, dtype=np.float32)  # uint8 to float32

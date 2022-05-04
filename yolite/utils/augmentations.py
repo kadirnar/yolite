@@ -130,6 +130,8 @@ def random_perspective(im,
                        shear=10,
                        perspective=0.0,
                        border=(0, 0)):
+    # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1), scale=(0.9, 1.1), shear=(-10, 10))
+    # targets = [cls, xyxy]
 
     height = im.shape[0] + border[0] * 2  # shape(h,w,c)
     width = im.shape[1] + border[1] * 2
@@ -147,7 +149,9 @@ def random_perspective(im,
     # Rotation and Scale
     R = np.eye(3)
     a = random.uniform(-degrees, degrees)
+    # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
     s = random.uniform(1 - scale, 1 + scale)
+    # s = 2 ** random.uniform(-scale, scale)
     R[:2] = cv2.getRotationMatrix2D(angle=a, center=(0, 0), scale=s)
 
     # Shear
@@ -168,6 +172,11 @@ def random_perspective(im,
         else:  # affine
             im = cv2.warpAffine(im, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
 
+    # Visualize
+    # import matplotlib.pyplot as plt
+    # ax = plt.subplots(1, 2, figsize=(12, 6))[1].ravel()
+    # ax[0].imshow(im[:, :, ::-1])  # base
+    # ax[1].imshow(im2[:, :, ::-1])  # warped
 
     # Transform label coordinates
     n = len(targets)
@@ -226,6 +235,7 @@ def copy_paste(im, labels, segments, p=0.5):
         result = cv2.bitwise_and(src1=im, src2=im_new)
         result = cv2.flip(result, 1)  # augment segments (flip left-right)
         i = result > 0  # pixels to replace
+        # i[:, :] = result.max(2).reshape(h, w, 1)  # act over ch
         im[i] = result[i]  # cv2.imwrite('debug.jpg', im)  # debug
 
     return im, labels, segments

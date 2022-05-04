@@ -113,7 +113,7 @@ LOCAL_RANK = int(
 )  # https://pytorch.org/docs/stable/elastic/run.html
 
 # Get orientation exif tag
-for orientation in ExifTags.TAGS:
+for orientation in ExifTags.TAGS.keys():
     if ExifTags.TAGS[orientation] == "Orientation":
         break
 
@@ -296,11 +296,10 @@ class LoadImages:
             self.new_video(videos[0])  # new video
         else:
             self.cap = None
-        if self.nf <= 0:
-            raise AssertionError(
-                f"No images or videos found in {p}. "
-                f"Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}"
-            )
+        assert self.nf > 0, (
+            f"No images or videos found in {p}. "
+            f"Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}"
+        )
 
     def __iter__(self):
         self.count = 0
@@ -332,8 +331,7 @@ class LoadImages:
             # Read image
             self.count += 1
             img0 = cv2.imread(path)  # BGR
-            if img0 is None:
-                raise AssertionError(f"Image Not Found {path}")
+            assert img0 is not None, f"Image Not Found {path}"
             s = f"image {self.count}/{self.nf} {path}: "
 
         # Padded resize
@@ -379,8 +377,7 @@ class LoadWebcam:  # for inference
         img0 = cv2.flip(img0, 1)  # flip left-right
 
         # Print
-        if not ret_val:
-            raise AssertionError(f"Camera Error {self.pipe}")
+        assert ret_val, f"Camera Error {self.pipe}"
         img_path = "webcam.jpg"
         s = f"webcam {self.count}: "
 
@@ -435,8 +432,7 @@ class LoadStreams:
                 s = pafy.new(s).getbest(preftype="mp4").url  # YouTube URL
             s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
             cap = cv2.VideoCapture(s)
-            if not cap.isOpened():
-                raise AssertionError(f"{st}Failed to open {s}")
+            assert cap.isOpened(), f"{st}Failed to open {s}"
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = cap.get(cv2.CAP_PROP_FPS)  # warning: may return 0 or nan
@@ -481,6 +477,7 @@ class LoadStreams:
         )  # frame number, frame array, inference every 'read' frame
         while cap.isOpened() and n < f:
             n += 1
+            # _, self.imgs[index] = cap.read()
             cap.grab()
             if n % read == 0:
                 success, im = cap.retrieve()
@@ -575,6 +572,7 @@ class LoadImagesAndLabels(Dataset):
                 p = Path(p)  # os-agnostic
                 if p.is_dir():  # dir
                     f += glob.glob(str(p / "**" / "*.*"), recursive=True)
+                    # f = list(p.rglob('*.*'))  # pathlib
                 elif p.is_file():  # file
                     with open(p) as t:
                         t = t.read().strip().splitlines()
@@ -583,6 +581,7 @@ class LoadImagesAndLabels(Dataset):
                             x.replace("./", parent) if x.startswith("./") else x
                             for x in t
                         ]  # local to global path
+                        # f += [p.parent / x.lstrip(os.sep) for x in t]  # local to global path (pathlib)
                 else:
                     raise Exception(f"{prefix}{p} does not exist")
             self.im_files = sorted(
@@ -590,8 +589,8 @@ class LoadImagesAndLabels(Dataset):
                 for x in f
                 if x.split(".")[-1].lower() in IMG_FORMATS
             )
-            if not self.im_files:
-                raise AssertionError(f"{prefix}No images found")
+            # self.img_files = sorted([x for x in f if x.suffix[1:].lower() in IMG_FORMATS])  # pathlib
+            assert self.im_files, f"{prefix}No images found"
         except Exception as e:
             raise Exception(
                 f"{prefix}Error loading data from {path}: {e}\nSee {HELP_URL}"
@@ -607,12 +606,10 @@ class LoadImagesAndLabels(Dataset):
                 np.load(cache_path, allow_pickle=True).item(),
                 True,
             )  # load dict
-            if cache["version"] != self.cache_version:
-                raise AssertionError
-            if cache["hash"] != get_hash(
+            assert cache["version"] == self.cache_version  # same version
+            assert cache["hash"] == get_hash(
                 self.label_files + self.im_files
-            ):
-                raise AssertionError
+            )  # same hash
         except Exception:
             cache, exists = self.cache_labels(cache_path, prefix), False  # cache
 
@@ -627,10 +624,9 @@ class LoadImagesAndLabels(Dataset):
             )  # display cache results
             if cache["msgs"]:
                 LOGGER.info("\n".join(cache["msgs"]))  # display warnings
-        if not (
+        assert (
             nf > 0 or not augment
-        ):
-            raise AssertionError(f"{prefix}No labels in {cache_path}. Can not train without labels. See {HELP_URL}")
+        ), f"{prefix}No labels in {cache_path}. Can not train without labels. See {HELP_URL}"
 
         # Read cache
         [cache.pop(k) for k in ("hash", "version", "msgs")]  # remove items
@@ -772,6 +768,11 @@ class LoadImagesAndLabels(Dataset):
     def __len__(self):
         return len(self.im_files)
 
+    # def __iter__(self):
+    #     self.count = -1
+    #     print('ran dataset iter')
+    #     #self.shuffled_vector = np.random.permutation(self.nF) if self.augment else np.arange(self.nF)
+    #     return self
 
     def __getitem__(self, index):
         index = self.indices[index]  # linear, shuffled, or image_weights
@@ -843,6 +844,9 @@ class LoadImagesAndLabels(Dataset):
                 if nl:
                     labels[:, 1] = 1 - labels[:, 1]
 
+            # Cutouts
+            # labels = cutout(img, labels, p=0.5)
+            # nl = len(labels)  # update after cutout
 
         labels_out = torch.zeros((nl, 6))
         if nl:
@@ -866,8 +870,7 @@ class LoadImagesAndLabels(Dataset):
                 im = np.load(fn)
             else:  # read image
                 im = cv2.imread(f)  # BGR
-                if im is None:
-                    raise AssertionError(f"Image Not Found {f}")
+                assert im is not None, f"Image Not Found {f}"
             h0, w0 = im.shape[:2]  # orig hw
             r = self.img_size / max(h0, w0)  # ratio
             if r != 1:  # if sizes are not equal
@@ -952,6 +955,7 @@ class LoadImagesAndLabels(Dataset):
         labels4 = np.concatenate(labels4, 0)
         for x in (labels4[:, 1:], *segments4):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
+        # img4, labels4 = replicate(img4, labels4)  # replicate
 
         # Augment
         img4, labels4, segments4 = copy_paste(
@@ -1042,6 +1046,7 @@ class LoadImagesAndLabels(Dataset):
 
         for x in (labels9[:, 1:], *segments9):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
+        # img9, labels9 = replicate(img9, labels9)  # replicate
 
         # Augment
         img9, labels9 = random_perspective(
@@ -1165,15 +1170,15 @@ def extract_boxes(
                         f.parent.mkdir(parents=True)
 
                     b = x[1:] * [w, h, w, h]  # box
+                    # b[2:] = b[2:].max()  # rectangle to square
                     b[2:] = b[2:] * 1.2 + 3  # pad
                     b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(np.int)
 
                     b[[0, 2]] = np.clip(b[[0, 2]], 0, w)  # clip boxes outside of image
                     b[[1, 3]] = np.clip(b[[1, 3]], 0, h)
-                    if not cv2.imwrite(
+                    assert cv2.imwrite(
                         str(f), im[b[1] : b[3], b[0] : b[2]]
-                    ):
-                        raise AssertionError(f"box failure in {f}")
+                    ), f"box failure in {f}"
 
 
 def autosplit(
@@ -1233,10 +1238,8 @@ def verify_image_label(args):
         im = Image.open(im_file)
         im.verify()  # PIL verify
         shape = exif_size(im)  # image size
-        if not (shape[0] > 9) & (shape[1] > 9):
-            raise AssertionError(f"image size {shape} <10 pixels")
-        if im.format.lower() not in IMG_FORMATS:
-            raise AssertionError(f"invalid image format {im.format}")
+        assert (shape[0] > 9) & (shape[1] > 9), f"image size {shape} <10 pixels"
+        assert im.format.lower() in IMG_FORMATS, f"invalid image format {im.format}"
         if im.format.lower() in ("jpg", "jpeg"):
             with open(im_file, "rb") as f:
                 f.seek(-2, 2)
@@ -1262,16 +1265,13 @@ def verify_image_label(args):
                 lb = np.array(lb, dtype=np.float32)
             nl = len(lb)
             if nl:
-                if (
-                    lb.shape[1] != 5
-                ):
-                    raise AssertionError(f"labels require 5 columns, {lb.shape[1]} columns detected")
-                if not (lb >= 0).all():
-                    raise AssertionError(f"negative label values {lb[lb < 0]}")
-                if not (
+                assert (
+                    lb.shape[1] == 5
+                ), f"labels require 5 columns, {lb.shape[1]} columns detected"
+                assert (lb >= 0).all(), f"negative label values {lb[lb < 0]}"
+                assert (
                     lb[:, 1:] <= 1
-                ).all():
-                    raise AssertionError(f"non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}")
+                ).all(), f"non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}"
                 _, i = np.unique(lb, axis=0, return_index=True)
                 if len(i) < nl:  # duplicate row check
                     lb = lb[i]  # remove duplicates
@@ -1311,8 +1311,7 @@ def dataset_stats(
     def unzip(path):
         # Unzip data.zip TODO: CONSTRAINT: path/to/abc.zip MUST unzip to 'path/to/abc/'
         if str(path).endswith(".zip"):  # path is data.zip
-            if not Path(path).is_file():
-                raise AssertionError(f"Error unzipping {path}, file not found")
+            assert Path(path).is_file(), f"Error unzipping {path}, file not found"
             ZipFile(path).extractall(path=path.parent)  # unzip
             dir = path.with_suffix("")  # dataset directory == zip name
             return (

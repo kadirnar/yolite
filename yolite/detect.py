@@ -1,4 +1,4 @@
-from yolite.utils.yolov5 import Yolov5
+from utils.yolov5 import Yolov5
 
 weights = "yolov5s.pt"
 img = "data/images/bus.jpg"
