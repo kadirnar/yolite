@@ -73,9 +73,6 @@ class MixConv2d(nn.Module):
 
 
 class Ensemble(nn.ModuleList):
-    # Ensemble of models
-    def __init__(self):
-        super().__init__()
 
     def forward(self, x, augment=False, profile=False, visualize=False):
         y = []
