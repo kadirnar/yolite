@@ -13,7 +13,7 @@ def get_requirements():
 
 setup(
     name="yolite",
-    version="0.0.2",
+    version="0.0.3",
     description="Yolov5-Lite: Minimal YoloV5 Implementation",
     long_description=readme(),
     long_description_content_type="text/markdown",

@@ -41,8 +41,7 @@ def torch_distributed_zero_first(local_rank: int):
 
 def device_count():
     # Returns number of CUDA devices available. Safe version of torch.cuda.device_count(). Only works on Linux.
-    if platform.system() != 'Linux':
-        raise AssertionError('device_count() function only works on Linux')
+    assert platform.system() == 'Linux', 'device_count() function only works on Linux'
     try:
         cmd = 'nvidia-smi -L | wc -l'
         return int(subprocess.run(cmd, shell=True, capture_output=True, check=True).stdout.decode().split()[-1])
@@ -51,6 +50,7 @@ def device_count():
 
 
 def select_device(device='', batch_size=0, newline=True):
+    # device = 'cpu' or '0' or '0,1,2,3'
     s = f'YOLOv5 🚀 {git_describe() or file_update_date()} torch {torch.__version__} '  # string
     device = str(device).strip().lower().replace('cuda:', '')  # to string, 'cuda:0' to '0'
     cpu = device == 'cpu'
@@ -58,15 +58,15 @@ def select_device(device='', batch_size=0, newline=True):
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
     elif device:  # non-cpu device requested
         os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable - must be before assert is_available()
-        if not (torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', ''))):
-            raise AssertionError(f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)")
+        assert torch.cuda.is_available() and torch.cuda.device_count() >= len(device.replace(',', '')), \
+            f"Invalid CUDA '--device {device}' requested, use '--device cpu' or pass valid CUDA device(s)"
 
     cuda = not cpu and torch.cuda.is_available()
     if cuda:
         devices = device.split(',') if device else '0'  # range(torch.cuda.device_count())  # i.e. 0,1,6,7
         n = len(devices)  # device count
-        if n > 1 and batch_size > 0 and batch_size % n != 0:
-            raise AssertionError(f'batch-size {batch_size} not multiple of GPU count {n}')
+        if n > 1 and batch_size > 0:  # check batch_size is divisible by device_count
+            assert batch_size % n == 0, f'batch-size {batch_size} not multiple of GPU count {n}'
         space = ' ' * (len(s) + 1)
         for i, d in enumerate(devices):
             p = torch.cuda.get_device_properties(i)
@@ -129,7 +129,7 @@ def profile(input, ops, n=10, device=None):
                 mem = torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0  # (GB)
                 s_in = tuple(x.shape) if isinstance(x, torch.Tensor) else 'list'
                 s_out = tuple(y.shape) if isinstance(y, torch.Tensor) else 'list'
-                p = sum([x.numel() for x in m.parameters()]) if isinstance(m, nn.Module) else 0  # parameters
+                p = sum(list(x.numel() for x in m.parameters())) if isinstance(m, nn.Module) else 0  # parameters
                 print(f'{p:12}{flops:12.4g}{mem:>14.3f}{tf:14.4g}{tb:14.4g}{str(s_in):>24s}{str(s_out):>24s}')
                 results.append([p, flops, mem, tf, tb, s_in, s_out])
             except Exception as e:
@@ -250,7 +250,7 @@ def scale_img(img, ratio=1.0, same_shape=False, gs=32):  # img(16,3,256,416)
 def copy_attr(a, b, include=(), exclude=()):
     # Copy attributes from b to a, options to only include [...] and to exclude [...]
     for k, v in b.__dict__.items():
-        if (include and k not in include) or k.startswith('_') or k in exclude:
+        if (len(include) and k not in include) or k.startswith('_') or k in exclude:
             continue
         else:
             setattr(a, k, v)
@@ -288,6 +288,8 @@ class ModelEMA:
     def __init__(self, model, decay=0.9999, tau=2000, updates=0):
         # Create EMA
         self.ema = deepcopy(de_parallel(model)).eval()  # FP32 EMA
+        # if next(model.parameters()).device.type != 'cpu':
+        #     self.ema.half()  # FP16 EMA
         self.updates = updates  # number of EMA updates
         self.decay = lambda x: decay * (1 - math.exp(-x / tau))  # decay exponential ramp (to help early epochs)
         for p in self.ema.parameters():
